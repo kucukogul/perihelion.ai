@@ -8,6 +8,8 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = PROJECT_ROOT / "models" / "storm_lgbm.joblib"
+FEATURES_CSV = PROJECT_ROOT / "data" / "processed" / "features.csv"
+DROP_FOR_FEATURES = ("label", "time_tag", "flux")
 
 
 def risk_status(proba: float) -> str:
@@ -35,6 +37,27 @@ def predict_storm(features: dict) -> dict:
     if missing:
         raise ValueError(f"Missing required features: {missing}")
     row = pd.DataFrame([[features[c] for c in feature_names]], columns=feature_names)
+    proba = float(model.predict_proba(row)[0, 1])
+    return {"storm_risk": proba, "status": risk_status(proba)}
+
+
+def predict_latest_from_csv() -> dict:
+    if not FEATURES_CSV.exists():
+        raise FileNotFoundError(
+            f"Features CSV not found at {FEATURES_CSV}. Run build_features first."
+        )
+    df = pd.read_csv(FEATURES_CSV)
+    drop_cols = [c for c in DROP_FOR_FEATURES if c in df.columns]
+    X = df.drop(columns=drop_cols).select_dtypes(include=["number", "bool"])
+    if len(X) == 0:
+        raise ValueError("No numeric/bool feature rows in features CSV")
+    bundle = _load_bundle()
+    model = bundle["model"]
+    feature_names = list(bundle["feature_names"])
+    missing = [c for c in feature_names if c not in X.columns]
+    if missing:
+        raise ValueError(f"CSV missing columns required by model: {missing}")
+    row = X.iloc[[-1]][feature_names]
     proba = float(model.predict_proba(row)[0, 1])
     return {"storm_risk": proba, "status": risk_status(proba)}
 
