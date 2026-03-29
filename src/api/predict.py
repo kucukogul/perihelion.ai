@@ -9,7 +9,7 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = PROJECT_ROOT / "models" / "storm_lgbm.joblib"
 FEATURES_CSV = PROJECT_ROOT / "data" / "processed" / "features.csv"
-DROP_FOR_FEATURES = ("label", "time_tag", "flux")
+DROP_FOR_FEATURES = ("label", "time_tag")
 
 
 def risk_status(proba: float) -> str:

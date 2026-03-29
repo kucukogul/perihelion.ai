@@ -2,7 +2,7 @@ PYTHON ?= python3
 VENV ?= .venv
 VENV_PY = $(VENV)/bin/python
 
-.PHONY: install install-venv fetch features train api pipeline doctor
+.PHONY: install install-venv fetch features train api pipeline doctor docs
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -31,3 +31,7 @@ api:
 	$(PYTHON) src/api/app.py
 
 pipeline: fetch features train
+
+docs:
+	@echo "Jüri / rapor: docs/RAPOR.md"
+	@echo "Repo giriş:  README.md"
