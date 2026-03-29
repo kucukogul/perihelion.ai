@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Güneş Fırtınaları Erken Uyarı Ağı</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Professional Header with Logo -->
+    <header class="system-header">
+      <div class="header-logo">
+        <img src="logo/logo.png" alt="Perihelion AI" class="logo-image" onerror="this.onerror=null;this.src='logo/perihelionlogo.svg';" />
+      </div>
+      <div class="header-status">
+        <div class="status-indicator live"></div>
+        <span class="status-text">MISSION CONTROL ACTIVE</span>
+      </div>
+    </header>
+
+    <div id="pause-indicator" class="pause-indicator" aria-live="polite">SİMÜLASYON DURAKLATILDI</div>
+
+    <aside class="hud-legend" aria-label="Sunum kontrol rehberi">
+      <h2>HUD LEGEND</h2>
+      <p><kbd>Space</kbd><span>Duraklat / Devam</span></p>
+      <p><kbd>R</kbd><span>Sıfırla</span></p>
+    </aside>
+
+    <aside class="ai-terminal" aria-label="AI terminal">
+      <h2>AI TERMINAL</h2>
+      <p id="ai-terminal-log" class="ai-terminal-log">[SYS] Waiting for neural backend connection.</p>
+    </aside>
+
+    <aside class="institute-badge" aria-label="Kurumsal kimlik">
+      <span class="logo-mark" aria-hidden="true">✦</span>
+      <div>
+        <strong>Uzay Hava Erken Uyarı Enstitüsü</strong>
+        <small>Space Weather Intelligence Unit</small>
+      </div>
+    </aside>
+
+    <main class="dashboard waiting-data" aria-label="Güneş Fırtınaları Erken Uyarı Ağı Dashboard">
+      <div class="scene-area" aria-hidden="true"></div>
+
+      <aside class="panel panel-left" aria-label="Canlı veriler paneli">
+        <header class="panel-header">
+          <h1>CANLI UYDU VERİSİ</h1>
+          <p>Solar telemetri akışı ve parçacık ölçümleri</p>
+        </header>
+
+        <section class="panel-content">
+          <article class="data-card">
+            <div class="data-head">
+              <h2>GÜNEŞ RÜZGARI HIZI (SW)</h2>
+              <span class="data-icon">SW</span>
+            </div>
+            <p class="data-value"><span id="wind-speed-value">441</span> <small>km/s</small></p>
+            <div class="meter" role="img" aria-label="Güneş rüzgarı hız göstergesi">
+              <div id="wind-speed-fill" class="meter-fill" style="width: 49%"></div>
+            </div>
+          </article>
+
+          <article class="data-card">
+            <div class="data-head">
+              <h2>PROTON YOĞUNLUĞU (PR)</h2>
+              <span class="data-icon">PR</span>
+            </div>
+            <p class="data-value"><span id="proton-density-value">3.3</span> <small>p/cm³</small></p>
+            <div class="meter" role="img" aria-label="Proton yoğunluğu göstergesi">
+              <div id="proton-density-fill" class="meter-fill meter-fill-soft" style="width: 36%"></div>
+            </div>
+          </article>
+
+          <div class="mini-stats" aria-label="Ek telemetri verileri">
+            <p><span>Bz</span><strong id="bz-value">-3.4 nT</strong></p>
+            <p><span>Elektron Akı</span><strong id="electron-flux-value">1.8e3</strong></p>
+          </div>
+
+          <article class="telemetry-chart-container" aria-label="Canlı telemetri analizi">
+            <div class="telemetry-chart-head">
+              <h2>CANLI TELEMETRİ ANALİZİ (SW / Kp)</h2>
+            </div>
+
+            <div id="telemetry-upload-state" class="telemetry-upload-state">
+              <button id="connect-system-btn" class="upload-cta" type="button">SİSTEMİ BAŞLAT (Bağlan)</button>
+              <p class="upload-help">Canlı telemetri için yerel AI sunucusuna bağlanın.</p>
+              <p id="connection-error" class="upload-error" aria-live="polite"></p>
+            </div>
+
+            <div id="telemetry-chart-wrap" class="telemetry-chart-canvas-wrap is-hidden">
+              <canvas id="telemetry-chart" aria-label="Son 60 saniye güneş rüzgarı grafiği"></canvas>
+            </div>
+          </article>
+        </section>
+      </aside>
+
+      <aside class="panel panel-right" aria-label="Risk analizi paneli">
+        <header class="panel-header">
+          <h1 id="status-title" class="status-title">SİSTEM DURUMU</h1>
+          <p>Jeomanyetik risk analizi ve erken uyarı</p>
+        </header>
+
+        <section class="panel-content">
+          <article id="alert-card" class="alert-card">
+            <h2 id="alarm-level">SARI ALARM</h2>
+            <p id="alarm-message">G2 Seviye Fırtına Yaklaşıyor</p>
+            <span id="alarm-window">Etki penceresi: T-9 saat</span>
+            <div class="ai-confidence-row">
+              <span>AI Güven Endeksi</span>
+              <strong id="ai-confidence-value">--%</strong>
+            </div>
+          </article>
+
+          <article id="kp-card" class="kp-card" aria-label="Kp endeks paneli">
+            <div class="kp-head">
+              <h2>Kp ENDEKSİ</h2>
+              <strong id="kp-value">4 / 9</strong>
+            </div>
+            <div class="kp-forecast">
+              <span>TAHMİN (AI)</span>
+              <strong id="kp-prediction-value">5 / 9</strong>
+            </div>
+            <div id="kp-scale" class="kp-scale" role="img" aria-label="Kp endeksi 1-9 ölçeği">
+              <span data-kp-level="1">1</span>
+              <span data-kp-level="2">2</span>
+              <span data-kp-level="3">3</span>
+              <span data-kp-level="4" class="active">4</span>
+              <span data-kp-level="5">5</span>
+              <span data-kp-level="6">6</span>
+              <span data-kp-level="7">7</span>
+              <span data-kp-level="8">8</span>
+              <span data-kp-level="9">9</span>
+            </div>
+            <div class="kp-bar" aria-hidden="true">
+              <div id="kp-fill" class="kp-fill" style="width: 37.5%"></div>
+            </div>
+          </article>
+
+          <div class="impact-list" aria-label="Operasyonel etkiler">
+            <p><span>İyonosferik Veri Yükü</span><strong id="impact-iono-value" class="risk-low">Düşük</strong></p>
+            <p><span>Yörünge Koruma Durumu</span><strong id="impact-orbit-value" class="risk-low">Nominal</strong></p>
+            <p><span>GIC (Yer İndüklemeli Akım) Riski</span><strong id="impact-gic-value" class="risk-low">Düşük</strong></p>
+          </div>
+        </section>
+      </aside>
+
+      <section class="panel panel-bottom" aria-label="Zaman çizelgesi paneli">
+        <header class="panel-header">
+          <h1>ZAMAN ÇİZELGESİ</h1>
+          <p>24 saatlik olay akışı ve tahminler</p>
+        </header>
+
+        <div class="storm-timeline" id="storm-timeline" aria-label="Fırtına gelişim zaman çizelgesi">
+          <div class="timeline-line"></div>
+          <div class="timeline-line-active" id="timeline-line-active"></div>
+
+          <article class="timeline-event">
+            <span class="dot" aria-hidden="true"></span>
+            <h2>GÜNEŞ PATLAMASI</h2>
+            <p>Kaynak Tespiti: Aktif Bölge AR</p>
+          </article>
+
+          <article class="timeline-event">
+            <span class="dot" aria-hidden="true"></span>
+            <h2>TRANSİT GEÇİŞ</h2>
+            <p>Heliosferik Akış: İzleniyor</p>
+          </article>
+
+          <article class="timeline-event">
+            <span class="dot" aria-hidden="true"></span>
+            <h2>L1 UYDU TEMASI</h2>
+            <p>Ön Cephe Ölçümü: Bekleniyor</p>
+          </article>
+
+          <article class="timeline-event">
+            <span class="dot" aria-hidden="true"></span>
+            <h2>DÜNYA MANYETOSFER</h2>
+            <p id="timeline-earth-eta">Tahmini Varış: --:--:--</p>
+          </article>
+
+          <div class="timeline-tracker" id="timeline-tracker" style="left: 0%">
+            <span class="dot" aria-hidden="true"></span>
+            <span>MEVCUT KONUM</span>
+          </div>
+
+          <p class="timeline-alert" id="timeline-critical-alert">KRİTİK VARIŞ</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>

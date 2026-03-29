@@ -4,9 +4,13 @@ import math
 import os
 import time
 from datetime import datetime, timezone
+from pathlib import Path
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+
+ROOT = Path(__file__).resolve().parents[2]
+FRONTEND_DIR = ROOT / "frontend"
 
 MODE = "calm"
 # options: "calm", "storm"
@@ -20,6 +24,53 @@ _last_tick: float | None = None
 
 app = Flask(__name__)
 CORS(app)
+
+
+def _frontend_exists() -> bool:
+    return FRONTEND_DIR.is_dir() and (FRONTEND_DIR / "index.html").is_file()
+
+
+@app.get("/")
+def serve_index():
+    if not _frontend_exists():
+        return jsonify(
+            {
+                "message": "Frontend not found. Add frontend/ (see README) or use /api/predict.",
+                "api": "/api/predict",
+                "health": "/health",
+            }
+        ), 503
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+@app.get("/main.js")
+def serve_main_js():
+    if not _frontend_exists():
+        return ("Not found", 404)
+    return send_from_directory(
+        FRONTEND_DIR, "main.js", mimetype="application/javascript; charset=utf-8"
+    )
+
+
+@app.get("/styles.css")
+def serve_styles():
+    if not _frontend_exists():
+        return ("Not found", 404)
+    return send_from_directory(FRONTEND_DIR, "styles.css", mimetype="text/css; charset=utf-8")
+
+
+@app.get("/logo/<path:name>")
+def serve_logo(name):
+    if not _frontend_exists():
+        return ("Not found", 404)
+    return send_from_directory(FRONTEND_DIR / "logo", name)
+
+
+@app.get("/assets/<path:name>")
+def serve_assets(name):
+    if not _frontend_exists():
+        return ("Not found", 404)
+    return send_from_directory(FRONTEND_DIR / "assets", name)
 
 
 def _utc_time_iso() -> str:
@@ -165,4 +216,6 @@ if __name__ == "__main__":
     print(f"[api] demo server; current MODE={MODE}")
     port = int(os.environ.get("PORT", "5050"))
     print(f"[api] starting Flask on http://0.0.0.0:{port} (reachable on LAN IP)")
+    if _frontend_exists():
+        print(f"[api] dashboard: http://127.0.0.1:{port}/ (same URL on your LAN IP)")
     app.run(host="0.0.0.0", port=port, debug=True)

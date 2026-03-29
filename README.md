@@ -35,7 +35,13 @@ flowchart LR
 ```
 
 - **Günlük akış:** `make pipeline` (veya `fetch` → `features` → `train`) modeli yeniler.  
-- **Sunum:** `make api` → telefon / ikinci cihazdan `http://<LAN-IP>:5050/api/predict`.
+- **Sunum:** `make api` → tarayıcıda **`http://<LAN-IP>:5050/`** (dashboard) veya doğrudan `http://<LAN-IP>:5050/api/predict`.
+
+### Dashboard (frontend)
+
+Arkadaşının arayüzü `frontend/` altında; Flask aynı portta statik dosyaları sunar. **Bağlan** ile polling `aynı origin` üzerinden `/api/predict`’e gider (sabit IP gerekmez).
+
+`index.html` dosyasını doğrudan açarsan (`file://`), tarayıcıda konsoldan veya önceden: `localStorage.setItem('perihelion_api_base','http://127.0.0.1:5050')` ile API tabanı verilebilir.
 
 ---
 
@@ -70,6 +76,7 @@ pip install -r requirements.txt
 | POST | `/api/mode` | `{"mode":"calm"}` veya `{"mode":"storm"}` — sunucuyu yeniden başlatmadan senaryo |
 | GET | `/health` | `status`, `mode`, `intensity` (0–1 rampa) |
 | GET | `/predict` | `/api/predict` ile aynı (legacy) |
+| GET | `/` | Dashboard (`frontend/index.html`), yoksa 503 + JSON yönlendirme |
 
 Örnek:
 
