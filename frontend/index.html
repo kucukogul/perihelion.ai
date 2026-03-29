@@ -13,7 +13,6 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <!-- Professional Header with Logo -->
     <header class="system-header">
       <div class="header-logo">
         <img src="logo/logo.png" alt="Perihelion AI" class="logo-image" onerror="this.onerror=null;this.src='logo/perihelionlogo.svg';" />
@@ -93,8 +92,8 @@
               <p id="connection-error" class="upload-error" aria-live="polite"></p>
             </div>
 
-            <div id="telemetry-chart-wrap" class="telemetry-chart-canvas-wrap is-hidden">
-              <canvas id="telemetry-chart" aria-label="Son 60 saniye güneş rüzgarı grafiği"></canvas>
+            <div id="telemetry-chart-wrap" class="telemetry-chart-canvas-wrap is-waiting">
+              <canvas id="telemetry-chart" aria-label="Gerçek güneş rüzgarı (mavi kesikli) ve AI tahmini (turuncu kesikli)"></canvas>
             </div>
           </article>
         </section>

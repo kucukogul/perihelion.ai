@@ -42,7 +42,6 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* Professional Header */
 .system-header {
   position: fixed;
   top: 0;
@@ -1262,7 +1261,6 @@ body::after {
   }
 }
 
-/* Professional Data Card Enhancements */
 .data-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
@@ -1320,7 +1318,6 @@ body::after {
   }
 }
 
-/* Professional Button Animations */
 .upload-cta {
   position: relative;
   overflow: hidden;
@@ -1341,7 +1338,6 @@ body::after {
   left: 100%;
 }
 
-/* Responsive Header */
 @media (max-width: 768px) {
   .system-header {
     padding: 0 16px;
