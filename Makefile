@@ -33,5 +33,6 @@ api:
 pipeline: fetch features train
 
 docs:
-	@echo "Jüri / rapor: docs/RAPOR.md"
-	@echo "Repo giriş:  README.md"
+	@echo "Teknik rapor: docs/TEKNIK_RAPOR.md"
+	@echo "Kısa rapor:   docs/RAPOR.md"
+	@echo "Repo giriş:   README.md"

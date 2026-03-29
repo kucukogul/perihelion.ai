@@ -89,7 +89,8 @@ curl -X POST http://127.0.0.1:5050/api/mode -H "Content-Type: application/json" 
 
 ## Proje raporu (yazdırılabilir / jüri)
 
-Ayrıntılı metin: **[docs/RAPOR.md](docs/RAPOR.md)** — problem, veri, model, demo, sınırlamalar, kaynakça.
+- **[docs/RAPOR.md](docs/RAPOR.md)** — kısa jüri / proje özeti  
+- **[docs/TEKNIK_RAPOR.md](docs/TEKNIK_RAPOR.md)** — mimari, veri hattı, ML, API, frontend, operasyon (detaylı teknik rapor)
 
 ---
 
