@@ -1,12 +1,12 @@
 # Perihelion.ai — Teknik Rapor
 
-Bu belge, **perihelion** deposunun mimarisini, veri hattını, makine öğrenmesi bileşenlerini, sunucu API’sini ve istemci tarafını teknik düzeyde özetler. Son güncelleme: kod tabanına göre üretilmiştir.
+Bu belge, **perihelion** deposunun mimarisini, veri hattını, makine öğrenmesi bileşenlerini, sunucu API’sini ve Streamlit arayüzünü teknik düzeyde özetler. Son güncelleme: `frontend/` kaldırılmış, kök `app.py` ve [Streamlit Cloud](https://perihelionai.streamlit.app/) ile uyumludur.
 
 ---
 
 ## 1. Amaç ve kapsam
 
-**Amaç:** NOAA SWPC üzerinden erişilen GOES X-ışını (flux) zaman serisinden türetilen özelliklerle, **gelecekteki kısa ufukta yüksek flux rejimini** ikili sınıflandırma ile tahmin etmeye yönelik bir **LightGBM** modeli eğitmek; hackathon ve demo için **Flask** üzerinden senkronize edilebilen bir **simülasyon API** ve **web tabanlı kontrol paneli** sunmak.
+**Amaç:** NOAA SWPC üzerinden erişilen GOES X-ışını (flux) zaman serisinden türetilen özelliklerle, **gelecekteki kısa ufukta yüksek flux rejimini** ikili sınıflandırma ile tahmin etmeye yönelik bir **LightGBM** modeli eğitmek; hackathon ve demo için **Flask** üzerinden senkronize edilebilen bir **simülasyon API** ve **Streamlit** ile jeomanyetik senaryo için sade bir **Wind Storm** arayüzü ([canlı](https://perihelionai.streamlit.app/)) sunmak.
 
 **Kapsam dışı (bilinçli):** Operasyonel uzay hava uyarısı ürünü; jeomanyetik Kp veya tam fiziksel fırtına tanımı ile bire bir hizalama; üretim ölçeğinde izleme veya resmi doğrulama süreçleri.
 
@@ -20,10 +20,10 @@ Bu belge, **perihelion** deposunun mimarisini, veri hattını, makine öğrenmes
 | `src/features/build_features.py` | Ham CSV → özellikler + etiket → `data/processed/features.csv` |
 | `main.py` | Eğitim betiği; model + özellik isimleri → `models/storm_lgbm.joblib` |
 | `src/api/predict.py` | Joblib yükleme, `predict_storm`, `predict_latest_from_csv` |
-| `src/api/app.py` | Flask uygulaması: demo API, statik `frontend/`, CORS |
-| `frontend/` | `index.html`, `main.js`, `styles.css`, `assets/` (doku), `logo/` |
+| `src/api/app.py` | Flask: demo API, CORS; kök `GET /` için statik dosya yok (503) |
+| `app.py` | Streamlit: Wind Storm Early Detection (form, CSV, heuristik tahmin) |
 | `Makefile` | `fetch`, `features`, `train`, `api`, `pipeline` hedefleri |
-| `requirements.txt` | Python bağımlılıkları |
+| `requirements.txt` | Kök: Streamlit + pandas (UI); train/API için ek paketler README’de |
 | `docs/RAPOR.md` | Kısa jüri / proje özeti |
 | `docs/TEKNIK_RAPOR.md` | Bu teknik rapor |
 
@@ -49,15 +49,17 @@ flowchart TB
     PROC --> TRAIN --> JOB
   end
   subgraph runtime [Çalışma zamanı demo]
-    FLASK[Flask app.py]
-    FE[frontend tarayıcı]
-    FLASK -->|GET /api/predict| FE
-    FE -->|polling| FLASK
+    FLASK[Flask src/api/app.py]
+    ST[Streamlit app.py]
+    CLOUD[Streamlit Cloud]
+    FLASK -->|JSON simülasyon| API_CLIENT[İstemci curl / başka UI]
+    ST -->|heuristik Kp/risk| USER[Operatör]
+    CLOUD -.->|dağıtım| ST
     JOB -.->|şu an bağlı değil| FLASK
   end
 ```
 
-**Önemli ayrım:** Üretimdeki demo uç noktası (`/api/predict`) şu an **simüle telemetri** döndürür. `predict.py` ile eğitilmiş model **aynı süreçte otomatik kullanılmaz**; entegrasyon için ayrı endpoint veya bayrak gerekir.
+**Önemli ayrım:** Flask `/api/predict` **simüle telemetri** döndürür. `predict.py` içindeki LightGBM **X-ışını özellikleri** ile eğitilmiştir; Streamlit `app.py` ise **ayrı heuristik** (rüzgâr / Kp / Bz) ile Kp/risk üretir — üçüncü bir ürün yüzeyi. Entegrasyon için ayrı endpoint veya bayrak gerekir.
 
 ---
 
@@ -149,16 +151,14 @@ Eğitim matrisinden **`flux`** sütunu çıkarılır; model doğrudan anlık ham
 
 ### 8.1 Genel
 
-- `Flask(__name__)`, `CORS(app)` — farklı origin’lerden istemci (ör. statik `http.server` + API `5050`) için.
-- `ROOT = Path(__file__).resolve().parents[2]`, `FRONTEND_DIR = ROOT / "frontend"`.
+- `Flask(__name__)`, `CORS(app)` — farklı origin’lerden istemci için.
+- `FRONTEND_DIR = ROOT / "frontend"` — depoda **frontend klasörü yok**; kök `GET /` **503** + JSON yönlendirmesi döner. Statik dashboard kaldırıldı; arayüz için [Streamlit Cloud](https://perihelionai.streamlit.app/) veya yerel `streamlit run app.py` kullanılır.
 
-### 8.2 Statik ön yüz
+### 8.2 Kök rota
 
 | Rota | İçerik |
 |------|--------|
-| `GET /` | `frontend/index.html` veya frontend yoksa 503 JSON |
-| `GET /main.js`, `/styles.css` | MIME ile |
-| `GET /logo/<path>`, `/assets/<path>` | Alt klasörler |
+| `GET /` | `frontend/` yoksa **503** + JSON (`/api/predict` veya Streamlit önerisi) |
 
 ### 8.3 Demo simülasyon mantığı
 
@@ -181,31 +181,24 @@ Eğitim matrisinden **`flux`** sütunu çıkarılır; model doğrudan anlık ham
 
 ---
 
-## 9. Ön yüz (`frontend/`)
+## 9. Streamlit arayüzü (`app.py`)
 
-### 9.1 Teknolojiler
+### 9.1 Amaç ve dağıtım
 
-- **HTML/CSS:** Tek sayfa düzeni; Inter fontu (Google Fonts).
-- **Three.js (r152):** Dünya, Güneş, yıldız kubbesi, parçacık tabanlı CME görselleştirmesi; isteğe bağlı OrbitControls ve post-processing (EffectComposer, UnrealBloomPass) dinamik yükleme.
-- **Chart.js 4.4.3 + chartjs-plugin-zoom (+ Hammer.js):** Canlı telemetri grafiği (gerçek rüzgar vs AI tahmini çizgileri).
-- **`main.js`:** Tek büyük IIFE; durum, polling, UI güncelleme, 3D döngü.
+- **Başlık:** Wind Storm Early Detection System — mühendis odaklı minimal form; animasyon ve hackathon görsel teması yok.
+- **Canlı:** [https://perihelionai.streamlit.app/](https://perihelionai.streamlit.app/) (Streamlit Community Cloud; repo kökündeki `app.py` + `requirements.txt` ile hizalanır).
+- **Yerel:** `streamlit run app.py`
 
-### 9.2 Backend adres çözümü
+### 9.2 Girdi ve çıktı
 
-Öncelik sırası:
+- **Girdi (sayısal):** Güneş rüzgârı hızı (km/s), proton yoğunluğu (p/cm³), Bz (nT), elektron akısı, gözlemlenen Kp; isteğe bağlı model Kp geçersizlemesi; isteğe bağlı CSV (sütun adları `wind` / `wind_km_s`, `proton` / `proton_cm3`, `bz`, `kp` vb. ile eşleştirilebilir).
+- **Çıktı:** Risk düzeyi (Low / Medium / High, tahmini Kp’ye göre), tahmini Kp (1–9), güven skoru (yüzde), bileşen riskleri için `st.bar_chart`, CSV toplu çalıştırmada `st.line_chart` (tahmini Kp serisi).
 
-1. `window.__PERIHELION_PREDICT_URL__` (tam tahmin URL’si)
-2. `localStorage.perihelion_api_base` + `/api/predict`
-3. Sayfa `http:`/`https:` ise: port **8080, 8081, 5173, 5500** vb. statik geliştirme portlarında → **`hostname:5050/api/predict`**; aksi halde aynı origin `/api/predict`
-4. Son çare: `http://127.0.0.1:5050/api/predict`
+### 9.3 Tahmin mantığı
 
-Bu sayede Flask tek portta veya statik sunucu + ayrı API senaryoları desteklenir.
-
-### 9.3 İstemci–sunucu etkileşimi
-
-- “Bağlan” ile periyodik `GET` (ör. ~2 s); `AbortSignal.timeout(8000)` uyumlu tarayıcılarda.
-- Gelen JSON alanları `applyDataPoint` ile doğrulanır (sonlu sayılar).
-- Grafik ve 3D sahne rüzgar / Kp / fırtına yoğunluğuna göre güncellenir.
+- **`predict_wind_storm()`** kök modülde; Flask veya joblib **çağrılmaz**.
+- Heuristik, eski demo ile uyumlu: rüzgâr / proton / Bz bileşen riskleri ve gözlemlenen Kp üzerinden yuvarlanmış Kp tahmini; isteğe bağlı `ai_kp_override` ile doğrudan Kp seçimi.
+- Bu, **GOES X-ışını LightGBM** modelinden bağımsız bir ürün yüzeyidir; bilimsel eğitim hattı `src/api/predict.py` ile karıştırılmamalıdır.
 
 ---
 
@@ -216,6 +209,7 @@ Bu sayede Flask tek portta veya statik sunucu + ayrı API senaryoları desteklen
 | `PORT` | Flask dinleme portu (varsayılan 5050) |
 | `make pipeline` | `fetch` → `features` → `train` |
 | `make api` | `python src/api/app.py` |
+| Streamlit Cloud | Repo bağlantısı; ana giriş noktası `app.py` |
 | `LOKY_MAX_CPU_COUNT` | `main.py` içinde joblib/lightgbm için (opsiyonel sınır) |
 | `MPLCONFIGDIR` | Matplotlib uyarıları için yerel `.mplconfig` |
 
@@ -234,10 +228,11 @@ Bu sayede Flask tek portta veya statik sunucu + ayrı API senaryoları desteklen
 ## 12. Geliştirme yönleri
 
 1. `/api/predict/live` veya bayrak ile **CSV son satırı + `predict_storm`** yanıtı; demo ile gerçek modeli birlikte veya ayrı sunma.
-2. **Zaman bazlı doğrulama** (walk-forward, son N gün test).
-3. Sabit veya fizik tabanlı eşik (ör. belirli flux seviyesi) ve raporlama.
-4. ACE/DSCOVR, Kp indeksi gibi ek kanallarla **jeomanyetik** hedefler (ayrı model).
-5. Üretim WSGI (gunicorn/uvicorn + proxy), HTTPS, rate limit.
+2. Streamlit üzerinde **canlı veri** veya Flask `/api/predict` ile isteğe bağlı bağlantı (şu an zorunlu değil).
+3. **Zaman bazlı doğrulama** (walk-forward, son N gün test).
+4. Sabit veya fizik tabanlı eşik (ör. belirli flux seviyesi) ve raporlama.
+5. ACE/DSCOVR, Kp indeksi gibi ek kanallarla **jeomanyetik** hedefler (ayrı model).
+6. Üretim WSGI (gunicorn/uvicorn + proxy), HTTPS, rate limit.
 
 ---
 
@@ -245,7 +240,8 @@ Bu sayede Flask tek portta veya statik sunucu + ayrı API senaryoları desteklen
 
 - NOAA Space Weather Prediction Center: https://www.swpc.noaa.gov/
 - GOES X-ışını JSON örneği: `https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json`
-- LightGBM, scikit-learn, Flask, Three.js, Chart.js resmi dokümantasyonları.
+- Streamlit: https://streamlit.io/ — Community Cloud: https://streamlit.io/cloud
+- LightGBM, scikit-learn, Flask resmi dokümantasyonları.
 
 ---
 

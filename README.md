@@ -2,6 +2,8 @@
 
 **NOAA GOES X-ışını verisi** ile kısa vadeli yüksek-flux olaylarını tahmin eden **LightGBM** modeli (`main.py` → `models/storm_lgbm.joblib`), demo için **Flask API** (sakin / fırtına senaryosu, canlı geçiş rampası) ve mühendis odaklı **Streamlit** arayüzü (`app.py`).
 
+**Canlı demo (Streamlit Community Cloud):** [https://perihelionai.streamlit.app/](https://perihelionai.streamlit.app/)
+
 ---
 
 ## Jüri özeti (30 saniye)
@@ -12,7 +14,7 @@
 | **Özellik** | Gecikmeler, oranlar, hareketli ortalamalar; etiket = birkaç adım sonraki flux eşik üstü mü (`data/processed/features.csv`) |
 | **Model** | `main.py` → `models/storm_lgbm.joblib` |
 | **API** | `GET /api/predict` + `POST /api/mode` → senkron demo; CORS açık |
-| **Arayüz** | `streamlit run app.py` — rüzgâr / Kp / Bz tabanlı heuristik tahmin (sunum ürünü) |
+| **Arayüz** | [Streamlit — Wind Storm](https://perihelionai.streamlit.app/) veya yerel `streamlit run app.py` — rüzgâr / Kp / Bz tabanlı heuristik tahmin (sunum ürünü) |
 
 **Önemli:** Flask demo endpoint’teki rüzgâr / Kp / `bz` değerleri **sunum simülasyonudur**. Bilimsel modelin eğitim hattı **GOES X-ışını flux** özellikleridir; jeomanyetik Kp ile bire bir aynı fiziksel olay değildir (raporda ayrıntılı).
 
@@ -61,9 +63,8 @@ pip install lightgbm scikit-learn joblib flask flask-cors
 
 ## Streamlit: Wind Storm Early Detection
 
-```bash
-streamlit run app.py
-```
+- **Tarayıcıdan:** [https://perihelionai.streamlit.app/](https://perihelionai.streamlit.app/)
+- **Yerel:** `streamlit run app.py`
 
 Girdi: güneş rüzgârı hızı, proton yoğunluğu, Bz, elektron akısı, gözlemlenen Kp; isteğe bağlı CSV ile toplu satır. Çıktı: risk (Low / Medium / High), tahmini Kp, güven skoru; basit grafikler.
 
@@ -106,7 +107,7 @@ curl -X POST http://127.0.0.1:5050/api/mode -H "Content-Type: application/json" 
 ## Proje raporu (yazdırılabilir / jüri)
 
 - **[docs/RAPOR.md](docs/RAPOR.md)** — kısa jüri / proje özeti  
-- **[docs/TEKNIK_RAPOR.md](docs/TEKNIK_RAPOR.md)** — mimari, veri hattı, ML, API (eski sürümde `frontend/` anlatımı geçebilir)
+- **[docs/TEKNIK_RAPOR.md](docs/TEKNIK_RAPOR.md)** — mimari, veri hattı, ML, API, Streamlit
 
 ---
 

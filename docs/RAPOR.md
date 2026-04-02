@@ -1,6 +1,6 @@
 # Perihelion.ai — Proje Raporu (Jüri / Dokümantasyon)
 
-**Özet:** Bu proje, NOAA Space Weather Prediction Center (SWPC) üzerinden yayınlanan **GOES birincil X-ışını** özet verisini kullanarak, kısa ufuklu **ikili sınıflandırma** (gelecekteki yüksek flux rejimi) denemesi ve buna paralel **etkileşimli demo API** sunar.
+**Özet:** Bu proje, NOAA Space Weather Prediction Center (SWPC) üzerinden yayınlanan **GOES birincil X-ışını** özet verisini kullanarak, kısa ufuklu **ikili sınıflandırma** (gelecekteki yüksek flux rejimi) denemesi ve buna paralel **etkileşimli demo API** sunar. Jeomanyetik sunum için kök dizinde **Streamlit** tabanlı **Wind Storm Early Detection** arayüzü vardır; canlı sürüm: [https://perihelionai.streamlit.app/](https://perihelionai.streamlit.app/).
 
 ---
 
@@ -16,7 +16,8 @@ Güneşteki yoğun X-ışını aktivitesi, uydu ve iletişim sistemleri için op
 2. **Özellik üretimi:** Zaman gecikmeleri, oranlar, hareketli ortalamalar; sızıntıyı azaltmak için eğitim özelliklerinde anlık `flux` çıkarılır.  
 3. **Etiket:** Gelecekteki birkaç zaman adımı sonrası flux, veri içinden seçilen bir eşiğin üstünde mi?  
 4. **Model:** LightGBM, dengesiz sınıflar için `class_weight="balanced"`.  
-5. **Sunum:** Flask + CORS; ön yüzün senkron gösterebilmesi için **sakin / fırtına** modları ve **yumuşak geçiş rampası** (`RAMP_SECONDS`).
+5. **Sunum (API):** Flask + CORS; senkron demo için **sakin / fırtına** modları ve **yumuşak geçiş rampası** (`RAMP_SECONDS`).  
+6. **Sunum (arayüz):** `app.py` — Streamlit; rüzgâr / proton / Bz / Kp girdileriyle **heuristik** Kp ve risk tahmini (X-ışını ML modelinden ayrı ürün yüzeyi). Yayın: [perihelionai.streamlit.app](https://perihelionai.streamlit.app/).
 
 ---
 
@@ -37,12 +38,13 @@ Güneşteki yoğun X-ışını aktivitesi, uydu ve iletişim sistemleri için op
 
 ---
 
-## 5. Demo API ve gerçek model ayrımı
+## 5. Demo API, Streamlit ve gerçek model ayrımı
 
 | Bileşen | Açıklama |
 |---------|-----------|
-| `/api/predict` (mevcut demo) | Rüzgar, Kp, `bz`, elektron akısı: **sunum simülasyonu**; `POST /api/mode` ile senaryo değişir, değerler rampayla geçer. |
-| ML hattı | `fetch` → `features` → `train` → joblib; üretim entegrasyonu için ayrı endpoint veya aynı yanıtta `storm_risk` alanı eklenebilir. |
+| `/api/predict` (Flask demo) | Rüzgar, Kp, `bz`, elektron akısı: **sunum simülasyonu**; `POST /api/mode` ile senaryo değişir, değerler rampayla geçer. |
+| **Streamlit** (`app.py`) | Form ve isteğe bağlı CSV; **heuristik** Kp/risk/güven — hackathon demo ile uyumlu mantık; [canlı](https://perihelionai.streamlit.app/). |
+| ML hattı | `fetch` → `features` → `train` → joblib; `predict_storm` X-ışını özellikleriyle çalışır; Flask demo JSON’u ile otomatik bağlı değildir. |
 
 Bu ayrım, jüri önünde **bilimsel doğruluk** ile **UI etkisi**nin karışmaması için bilinçlidir.
 
@@ -52,6 +54,7 @@ Bu ayrım, jüri önünde **bilimsel doğruluk** ile **UI etkisi**nin karışmam
 
 - Python 3, pandas, scikit-learn, LightGBM, joblib  
 - Flask, flask-cors  
+- Streamlit (Wind Storm arayüzü; kök `requirements.txt` ile dağıtım)  
 - SSL için `certifi` (fetch)
 
 ---
