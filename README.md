@@ -1,6 +1,6 @@
 # Perihelion.ai
 
-**NOAA GOES X-ışını verisi** ile kısa vadeli yüksek-flux olaylarını tahmin eden **LightGBM** modeli ve hackathon/demo için **Flask API** (sakin / fırtına senaryosu, canlı geçiş rampası).
+**NOAA GOES X-ışını verisi** ile kısa vadeli yüksek-flux olaylarını tahmin eden **LightGBM** modeli (`main.py` → `models/storm_lgbm.joblib`), demo için **Flask API** (sakin / fırtına senaryosu, canlı geçiş rampası) ve mühendis odaklı **Streamlit** arayüzü (`app.py`).
 
 ---
 
@@ -11,9 +11,10 @@
 | **Veri** | SWPC JSON → ham X-ışını zaman serisi (`data/raw/`) |
 | **Özellik** | Gecikmeler, oranlar, hareketli ortalamalar; etiket = birkaç adım sonraki flux eşik üstü mü (`data/processed/features.csv`) |
 | **Model** | `main.py` → `models/storm_lgbm.joblib` |
-| **API** | `GET /api/predict` + `POST /api/mode` → ön yüz senkron demo; CORS açık |
+| **API** | `GET /api/predict` + `POST /api/mode` → senkron demo; CORS açık |
+| **Arayüz** | `streamlit run app.py` — rüzgâr / Kp / Bz tabanlı heuristik tahmin (sunum ürünü) |
 
-**Önemli:** Demo endpoint’teki rüzgar / Kp / `bz` değerleri **sunum simülasyonudur**. Bilimsel hat **GOES X-ışını flux** üzerindedir; jeomanyetik Kp ile bire bir aynı fiziksel olay değildir (raporda ayrıntılı).
+**Önemli:** Flask demo endpoint’teki rüzgâr / Kp / `bz` değerleri **sunum simülasyonudur**. Bilimsel modelin eğitim hattı **GOES X-ışını flux** özellikleridir; jeomanyetik Kp ile bire bir aynı fiziksel olay değildir (raporda ayrıntılı).
 
 ---
 
@@ -26,22 +27,17 @@ flowchart LR
     B --> C[main.py: LightGBM]
     C --> D[storm_lgbm.joblib]
   end
-  subgraph demo [Demo API]
-    E[Flask app.py] --> F["/api/predict"]
+  subgraph demo [Demo]
+    E[Flask src/api/app.py] --> F["/api/predict"]
     E --> G["POST /api/mode"]
+    S[app.py Streamlit] -.->|manuel giriş / CSV| T[Wind Storm UI]
   end
-  D -.->|İsteğe bağlı entegrasyon| E
-  F --> H[Frontend]
+  D -.->|İsteğe bağlı| E
 ```
 
-- **Günlük akış:** `make pipeline` (veya `fetch` → `features` → `train`) modeli yeniler.  
-- **Sunum:** `make api` → tarayıcıda **`http://<LAN-IP>:5050/`** (dashboard) veya doğrudan `http://<LAN-IP>:5050/api/predict`.
-
-### Dashboard (frontend)
-
-Arkadaşının arayüzü `frontend/` altında; Flask aynı portta statik dosyaları sunar. **Bağlan** ile polling `aynı origin` üzerinden `/api/predict`’e gider (sabit IP gerekmez).
-
-`index.html` dosyasını doğrudan açarsan (`file://`), tarayıcıda konsoldan veya önceden: `localStorage.setItem('perihelion_api_base','http://127.0.0.1:5050')` ile API tabanı verilebilir.
+- **Günlük akış:** `make pipeline` (veya `fetch` → `features` → `train`) modeli yeniler (ek Python paketleri gerekir; aşağıya bakın).  
+- **Streamlit:** `streamlit run app.py` — jeomanyetik risk / Kp tahmini için form ve isteğe bağlı CSV.  
+- **Demo API:** `make api` → `http://127.0.0.1:5050/api/predict` (JSON simülasyonu).
 
 ---
 
@@ -52,6 +48,24 @@ python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+Kök `requirements.txt` **Streamlit arayüzü** (`app.py`) için `streamlit` ve `pandas` içerir.
+
+**Model eğitimi** (`make train` / `main.py`) ve **Flask API** (`make api`) için ek paketler gerekir, örneğin:
+
+```bash
+pip install lightgbm scikit-learn joblib flask flask-cors
+```
+
+---
+
+## Streamlit: Wind Storm Early Detection
+
+```bash
+streamlit run app.py
+```
+
+Girdi: güneş rüzgârı hızı, proton yoğunluğu, Bz, elektron akısı, gözlemlenen Kp; isteğe bağlı CSV ile toplu satır. Çıktı: risk (Low / Medium / High), tahmini Kp, güven skoru; basit grafikler.
 
 ---
 
@@ -70,13 +84,15 @@ pip install -r requirements.txt
 
 ## API (demo sunucusu)
 
+Sunucu: `python src/api/app.py` veya `make api`.
+
 | Metot | Yol | Açıklama |
 |--------|-----|----------|
 | GET | `/api/predict` | Birleşik JSON: `time`, `windSpeed`, `kpIndex`, `aiPredictionKp`, `bz`, `electronFlux` (simülasyon + ~`RAMP_SECONDS` rampa) |
-| POST | `/api/mode` | `{"mode":"calm"}` veya `{"mode":"storm"}` — sunucuyu yeniden başlatmadan senaryo |
+| POST | `/api/mode` | `{"mode":"calm"}` veya `{"mode":"storm"}` — senaryo |
 | GET | `/health` | `status`, `mode`, `intensity` (0–1 rampa) |
 | GET | `/predict` | `/api/predict` ile aynı (legacy) |
-| GET | `/` | Dashboard (`frontend/index.html`), yoksa 503 + JSON yönlendirme |
+| GET | `/` | Statik dashboard kaldırıldı; `frontend/` yoksa **503** + JSON (`/api/predict` kullanın veya Streamlit’i çalıştırın) |
 
 Örnek:
 
@@ -90,7 +106,7 @@ curl -X POST http://127.0.0.1:5050/api/mode -H "Content-Type: application/json" 
 ## Proje raporu (yazdırılabilir / jüri)
 
 - **[docs/RAPOR.md](docs/RAPOR.md)** — kısa jüri / proje özeti  
-- **[docs/TEKNIK_RAPOR.md](docs/TEKNIK_RAPOR.md)** — mimari, veri hattı, ML, API, frontend, operasyon (detaylı teknik rapor)
+- **[docs/TEKNIK_RAPOR.md](docs/TEKNIK_RAPOR.md)** — mimari, veri hattı, ML, API (eski sürümde `frontend/` anlatımı geçebilir)
 
 ---
 
